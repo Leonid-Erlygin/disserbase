@@ -1,0 +1,81 @@
+FROM nvidia/cuda:11.3.1-base-ubuntu20.04
+
+# Remove any third-party apt sources to avoid issues with expiring keys.
+RUN rm -f /etc/apt/sources.list.d/*.list
+
+ARG DEBIAN_FRONTEND=noninteractive
+# Install some basic utilities
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    zip \
+    unzip \
+    sox \
+    libsox-dev \
+    libsox-fmt-all \
+    build-essential \
+    ca-certificates \
+    sudo \
+    git \
+    bzip2 \
+    libx11-6 \
+    ffmpeg \
+    libsm6 \
+    libxext6 \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && \
+    apt-get install -y \
+        make \
+        texlive-xetex \
+        texlive-fonts-recommended \
+        texlive-fonts-extra \
+        texlive-lang-cyrillic \
+        texlive-lang-french \
+        texlive-science \
+        texlive-humanities \
+        texlive-latex-extra \
+        fonts-liberation \
+        latexmk \
+        biber \
+        ttf-mscorefonts-installer \
+        && fc-cache -fv \
+        && rm -rf /var/lib/apt/lists/*
+
+ 
+ 
+# Create a working directory
+RUN mkdir /app
+WORKDIR /app
+
+ENV PYTHONPATH /app
+
+# set theese arg's when using docker build
+ARG GID
+ARG UID
+ARG NAME
+USER root
+
+RUN groupadd -g ${GID} ${NAME}
+RUN adduser --disabled-password --force-badname --uid ${UID} --gid ${GID} --gecos '' --shell /bin/bash ${NAME} \
+ && chown -R ${NAME}:${NAME} /app
+RUN echo "" >> /etc/sudoers && echo "${NAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+USER ${NAME}
+
+ENV HOME=/home/${NAME}
+
+RUN mkdir $HOME/.cache $HOME/.config
+
+# Set up the Conda environment
+ENV CONDA_AUTO_UPDATE_CONDA=false \
+    PATH=$HOME/miniconda/bin:$PATH
+COPY --chown=${NAME} environment.yml /app/environment.yml
+
+RUN curl -sLo ~/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-py311_25.1.1-2-Linux-x86_64.sh \
+ && chmod +x ~/miniconda.sh \
+ && ~/miniconda.sh -b -p ~/miniconda \
+ && rm ~/miniconda.sh \
+ && conda env update -n base -f /app/environment.yml \
+ && rm /app/environment.yml \
+ && conda clean -ya
+ 
