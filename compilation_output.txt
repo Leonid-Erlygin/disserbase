@@ -1,0 +1,19 @@
+perl: warning: Setting locale failed.
+perl: warning: Please check that your locale settings:
+	LANGUAGE = (unset),
+	LC_ALL = (unset),
+	LANG = "en_US.UTF-8"
+    are supported and installed on your system.
+perl: warning: Falling back to the standard locale ("C").
+Latexmk: Run number 1 of rule 'xelatex'
+This is XeTeX, Version 3.14159265-2.6-0.999991 (TeX Live 2019/Debian) (preloaded format=xelatex)
+ restricted \write18 enabled.
+entering extended mode
+Latexmk: Non-existent bbl file 'dissertation.bbl'
+ No file dissertation.bbl.
+Collected error summary (may duplicate other messages):
+  xelatex: Command for 'xelatex' gave return code 1
+      Refer to 'dissertation.log' for details
+Latexmk: Use the -f option to force complete processing,
+ unless error was exceeding maximum runs, or warnings treated as errors.
+make: *** [Makefile:87: dissertation] Error 12

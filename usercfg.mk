@@ -3,7 +3,8 @@
 
 # MKRC ?= latexmkrc # config file
 # SOURCE ?= dissertation # source .tex file
-# BACKEND ?= -pdfxe
+BACKEND ?= -xelatex
+USEBIBER ?= 1
 ## -pdf=pdflatex
 ## -pdfdvi=pdflatex with dvi
 ## -pdfps=pdflatex with ps
