@@ -56,7 +56,7 @@ USEDEV ?= # use development version
 # Makefile options
 MAKEFLAGS := -s
 .DEFAULT_GOAL := all
-.NOTPARALLEL:
+#.NOTPARALLEL:
 
 export DRAFTON
 export FONTFAMILY
