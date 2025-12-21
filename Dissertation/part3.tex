@@ -1,3 +1,5 @@
+\chapter{Комплексная байесовская модель оценки неопределённости HolUE}\label{ch:holue}
+\section{Интеграция вероятностного эмбеддинга и галерею-осознанной неопределённости}\label{sec:holue/integration}
 \textcolor{gray}{Глава 3 посвящена разработке комплексной байесовской модели оценки неопределённости в задаче открытого распознавания, объединяющей информацию о качестве входного сигнала и структуре галереи известных объектов.}  
 \textcolor{blue}{Предлагаемый в этой главе метод HolUE (Holistic Uncertainty Estimation) расширяет модель GalUE, представленную в Главе 2, за счёт учёта вероятностной природы эмбеддинга запроса, что позволяет детектировать все три типа ошибок OSR: ложное принятие (false acceptance), ложный отказ (false rejection) и ошибочную идентификацию (misidentification).}  
 \textcolor{gray}{Основная идея метода заключается в моделировании апостериорного распределения классов \(p(c \mid x)\) через интеграл по пространству эмбеддингов, что формально объединяет обе составляющие неопределённости в единую меру.}  
@@ -19,7 +21,7 @@ p(z \mid x) = C_d(\kappa(x)) \exp\left(\kappa(x) \, \mu(x)^\top z\right).
 \]}  
 \textcolor{blue}{Здесь \(\kappa(x) > 0\) — параметр концентрации, обратно пропорциональный дисперсии: чем выше \(\kappa(x)\), тем выше качество входного сигнала.}  
 \textcolor{red}{Такой выбор позволяет использовать хорошо изученные свойства vMF-распределений и совместим с существующими архитектурами, такими как SCF.}  
-
+\section{Оценка неопределённости через расхождение Кулбака–Лейблера}\label{sec:holue/kl_divergence}
 \textcolor{gray}{Подставляя приближение \(p(c \mid x) \approx p(c \mid \mu_x)\) в выражение для апостериорного распределения, получаем оценку, сочетающую информацию из обеих моделей.}  
 \textcolor{blue}{Для количественной оценки степени неопределённости предлагается использовать расхождение Кулбака–Лейблера (KL-дивергенцию) между апостериорным распределением \(p(c \mid x)\) и априорным распределением \(p(c)\):}  
 \textcolor{gray}{\[
@@ -33,7 +35,7 @@ p(z \mid x) = C_d(\kappa(x)) \exp\left(\kappa(x) \, \mu(x)^\top z\right).
 \mathcal{U}(x) = \underbrace{\sum_{c=1}^K P_T(c \mid x) \log \frac{P_T(c \mid x)}{P(c)}}_{\text{KL}_1} + \underbrace{\frac{\beta^{1/T}}{S_{d-1}^{1/T}} \frac{1}{p(\mu_x)} \log\!\left[ \left(\frac{\beta}{S_{d-1}}\right)^{1/T - 1} \frac{p(\mu_x \mid x)}{p(\mu_x)} \right]}_{\text{KL}_2},
 \]}  
 \textcolor{red}{где \(\text{KL}_1\) отражает галерею-осознанную неопределённость (аналог GalUE), а \(\text{KL}_2\) — неопределённость, связанную с качеством сигнала (аналог SCF).}  
-
+\section{Калибровка итоговой оценки достоверности с помощью MLP}\label{sec:holue/calibration}
 \textcolor{gray}{Обе компоненты нормализуются по статистикам, полученным на валидационном множестве:}  
 \textcolor{gray}{\[
 \text{KL}^{\text{norm}}_i = \frac{\text{KL}_i - \mu_i^{\text{val}}}{\sigma_i^{\text{val}}}, \quad i \in \{1, 2\},
@@ -44,6 +46,45 @@ p(z \mid x) = C_d(\kappa(x)) \exp\left(\kappa(x) \, \mu(x)^\top z\right).
 \textcolor{gray}{Для финальной калибровки и получения итоговой оценки достоверности \(q_{\text{HolUE}}(x) \in [0,1]\) применяется многослойный перцептрон (MLP), обученный на валидационном множестве.}  
 \textcolor{blue}{MLP решает бинарную задачу классификации: предсказать, приведёт ли данный запрос к ошибке распознавания при фиксированном уровне ложных срабатываний (FPIR).}  
 \textcolor{red}{Альтернативно, вместо MLP может использоваться параметрическая функция на основе сигмоиды и экспоненциальных преобразований, однако эксперименты показали, что MLP обеспечивает наилучшее качество.}  
+
+% \begin{algorithm}[H]
+% \caption{HolUE: Holistic Uncertainty Estimation}
+% \label{alg:holue}
+% \begin{algorithmic}[1]
+% \Require 
+%     $\vecX$: Input biometric sample (image/audio); \\
+%     $G = \{g_1,\dots,g_K\}$: Gallery of known templates; \\
+%     $\vecM_c$, $\kappa$: Mean embedding and concentration for class $c$; \\
+%     $\beta = 0.5$: Prior for out-of-gallery class; \\
+%     $T = 20$: Temperature scaling factor; \\
+%     Validation set: For normalization statistics.
+
+% \Ensure $q_{\text{HolUE}} \in [0,1]$: Uncertainty score
+
+% \State // Step 1: Get probabilistic embedding via SCF [5]
+% \State $\vecM_\vecX, \kappa_\vecX \gets \text{SCF}(\vecX)$
+% \State $p(\vecZ|\vecX) \gets \text{vMF}(\vecM_\vecX, \kappa_\vecX)$
+
+% \State // Step 2: Compute known class likelihoods $p(\vecZ|c)$
+% \For{$c = 1$ to $K$}
+%     \State $p(\vecZ|c) \gets \text{vMF}(\vecZ; \vecM_c, \kappa)$ \Comment{Sec. III-B1}
+% \EndFor
+
+% \State // Step 3: Approximate posterior $P_T(c|\vecX)$ and apply temperature scaling with $T$.
+% \State Compute $p(c|\vecX)$ for $c\in(K, K+1]$ using equation~\eqref{eq:oog_posterior} and $P_T(c|\vecX)$ for $c\in{1,\dots,K}$ using Lemma 2. 
+
+% \State // Step 4: KL components
+% \State Compute $\text{KL}_1$ and $\text{KL}_2$ using Lemma 2
+
+% \State // Step 5: Normalize with aggregated over val. set statistics.
+% \State $KL_i^{\text{norm}} \gets (KL_i - \mu_i^{\text{val}})/\sigma_i^{\text{val}}$, $i=1,2$
+
+% \State // Step 6: Combine with MLP for final score
+% \State Train MLP $f_\theta$ on val. set to predict errors
+% \State $q_{\text{HolUE}} \gets f_\theta(KL_1^{\text{norm}}, KL_2^{\text{norm}})$
+% \State \Return $q_{\text{HolUE}}$
+% \end{algorithmic}
+% \end{algorithm}
 
 \textcolor{gray}{Таким образом, метод HolUE предоставляет теоретически обоснованную, доменно-агностичную и практически эффективную оценку неопределённости, способную детектировать все типы ошибок в задаче открытого распознавания.}  
 \textcolor{blue}{Алгоритм HolUE не требует переобучения базовой модели распознавания и может быть применён пост-фактум к любому системному пайплайну, использующему угловые эмбеддинги.}  
